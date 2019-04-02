@@ -1,0 +1,7 @@
+# A successful build produces the following files:
+privacyca/target/lib-privacyca-*-with-dependencies.jar
+privacyca/target/lib-privacyca-*-dependencies.zip
+privacyca/target/lib-privacyca-*.jar
+privacyca/target/lib-privacyca-*-javadoc.zip
+privacyca-integration/target/privacyca-integration-*.jar
+privacyca-integration/target/privacyca-integration-*-with-dependencies.jar

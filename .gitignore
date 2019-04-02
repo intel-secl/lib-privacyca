@@ -1,0 +1,4 @@
+/privacyca/target/
+/privacyca-integration/target/
+*.iml
+.idea
