@@ -14,7 +14,6 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
-import java.security.Provider;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.interfaces.RSAPublicKey;
@@ -33,19 +32,13 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
-import org.bouncycastle.crypto.DerivationParameters;
-import org.bouncycastle.crypto.digests.SHA1Digest;
-import org.bouncycastle.crypto.digests.SHA256Digest;
-//import org.bouncycastle.crypto.generators.KDFCounterBytesGenerator;
-import org.bouncycastle.crypto.macs.HMac;
-//import org.bouncycastle.crypto.params.KDFCounterParameters;
 
 /**
  *
  * @author dczech
  */
 public class Tpm2 {
-
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(Tpm2.class);
     private final static String IDENTITY = "IDENTITY";
     private final static String INTEGRITY = "INTEGRITY";
     private final static String STORAGE = "STORAGE";
@@ -153,10 +146,10 @@ public class Tpm2 {
                     default:
                         throw new NoSuchAlgorithmException(nameAlgorithm + " is not (currently) supported");
                 }
-
                 rsaCipher.init(Cipher.PUBLIC_KEY, key, oaepSpec);
                 byte[] encryptedSecret = rsaCipher.doFinal(secretData);
-                encryptedSeed.order(ByteOrder.LITTLE_ENDIAN).putShort((short) encryptedSecret.length);
+//                encryptedSeed.order(ByteOrder.LITTLE_ENDIAN).putShort((short) encryptedSecret.length);
+                encryptedSeed.order(ByteOrder.BIG_ENDIAN).putShort((short)encryptedSecret.length);
                 encryptedSeed.put(encryptedSecret);
             }
             break;
@@ -167,7 +160,6 @@ public class Tpm2 {
 
         // encrypt credential with Symmetric Algorithm
         byte[] symKey = kDFa(nameAlgorithm, seed, STORAGE, objectName, null, symKeySizeInBits);
-        ByteBuffer credentialBlob = ByteBuffer.allocate(Tpm2Credential.TPM2B_ID_OBJECT_SIZE);
         Cipher symCipher;
         byte[] encryptedCredential;
         if (symmetricAlgorithm == Tpm2Algorithm.Symmetric.AES) {
@@ -203,13 +195,18 @@ public class Tpm2 {
         hmac.update(objectName); // add bytes
         byte[] integrity = hmac.doFinal();
 
-        credentialBlob.order(ByteOrder.LITTLE_ENDIAN).putShort((short) (SHORT_BYTES + integrity.length + encryptedCredential.length));
+        //credentialBlob.order(ByteOrder.LITTLE_ENDIAN).putShort((short) (SHORT_BYTES + integrity.length + encryptedCredential.length));
+        ByteBuffer credentialBlob = ByteBuffer.allocate((short)SHORT_BYTES + SHORT_BYTES + integrity.length + encryptedCredential.length);
+        credentialBlob.order(ByteOrder.BIG_ENDIAN).putShort((short) (SHORT_BYTES + integrity.length + encryptedCredential.length));
         credentialBlob.order(ByteOrder.BIG_ENDIAN).putShort((short) integrity.length);
         credentialBlob.put(integrity).put(encryptedCredential);
 
-        return new Tpm2Credential(credentialBlob.array(), encryptedSeed.array());
+        ByteBuffer headerBlob = ByteBuffer.allocate(Tpm2Credential.TPM2B_HEADER_SIZE);
+        headerBlob.order(ByteOrder.BIG_ENDIAN).putInt(0xBADCC0DE);
+        headerBlob.order(ByteOrder.BIG_ENDIAN).putInt(1);
+        return new Tpm2Credential(headerBlob.array(), credentialBlob.array(), encryptedSeed.array());
     }
-
+    
 //    private static byte[] concat(byte[] left, byte[] right) {
 //        if(left == null) {
 //            return right;

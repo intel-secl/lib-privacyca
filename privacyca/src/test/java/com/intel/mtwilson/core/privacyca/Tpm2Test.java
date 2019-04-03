@@ -39,10 +39,11 @@ public class Tpm2Test {
     public static void setUpClass() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] modulus = Files.readAllBytes(Paths.get("src/test/resources/modulus.out"));
 
+        byte[] header = new byte[Tpm2Credential.TPM2B_HEADER_SIZE];
         byte[] credentialBlob = new byte[Tpm2Credential.TPM2B_ID_OBJECT_SIZE];
         byte[] encryptedSecret = new byte[Tpm2Credential.TPM2B_ENCRYPTED_SECRET_SIZE];
 
-        expectedCredential = new Tpm2Credential(credentialBlob, encryptedSecret);
+        expectedCredential = new Tpm2Credential(header, credentialBlob, encryptedSecret);
         BigInteger mod = new BigInteger(1, modulus);
         BigInteger exp = BigInteger.valueOf(65537);
         RSAPublicKeySpec keySpec = new RSAPublicKeySpec(mod, exp);
@@ -63,6 +64,7 @@ public class Tpm2Test {
     @Test
     public void testMakeCredential() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, ShortBufferException, IOException {
         Tpm2Credential out = Tpm2.makeCredential(publicKey, Tpm2Algorithm.Symmetric.AES, 128, Tpm2Algorithm.Hash.SHA256, "12345678\n".getBytes(), objectName);
+        System.out.println(bytesToHex(out.getHeader()));
         System.out.println(bytesToHex(out.getCredential()));
         System.out.println(bytesToHex(out.getSecret()));
     }

@@ -9,7 +9,7 @@ package com.intel.mtwilson.core.privacyca;
  *
  * @author dczech
  */
-final class Tpm2Algorithm {
+public final class Tpm2Algorithm {
 
     private Tpm2Algorithm() {
 

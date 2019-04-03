@@ -11,6 +11,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import javax.crypto.ShortBufferException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -58,7 +59,7 @@ public class PrivacyCATest {
      */
     @Ignore
     @Test
-    public void testProcessIdentityRequest12() throws NoSuchAlgorithmException, PCAException {
+    public void testProcessIdentityRequest12() throws NoSuchAlgorithmException, PCAException, ShortBufferException {
         System.out.println("processIdentityRequest");
         IdentityRequest request = new IdentityRequest("1.2", null, null, null, name);
         KeyPair ca = generateKey();

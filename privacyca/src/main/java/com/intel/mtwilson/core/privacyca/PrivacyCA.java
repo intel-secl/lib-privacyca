@@ -13,8 +13,11 @@ import gov.niarl.his.privacyca.TpmKeyParams;
 import gov.niarl.his.privacyca.TpmPubKey;
 import gov.niarl.his.privacyca.TpmSymmetricKey;
 import gov.niarl.his.privacyca.TpmUtils;
+
+import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Paths;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -29,11 +32,14 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.UUID;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 import javax.security.auth.x500.X500Principal;
+
+import org.apache.commons.io.FileUtils;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
@@ -47,7 +53,7 @@ import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.bouncycastle.x509.X509V3CertificateGenerator;
+//import org.bouncycastle.x509.X509V3CertificateGenerator;
 
 /**
  *
@@ -68,7 +74,7 @@ public class PrivacyCA {
      * @return IdentityProofRequest java model object.
      * @throws PCAException This method throws PCAException
      */
-    public static IdentityProofRequest processIdentityRequest(IdentityRequest request, RSAPrivateKey caPrivKey, RSAPublicKey caPubKey, RSAPublicKey ekPub, byte[] dataBlob) throws PCAException {
+    public static IdentityProofRequest processIdentityRequest(IdentityRequest request, RSAPrivateKey caPrivKey, RSAPublicKey caPubKey, RSAPublicKey ekPub, byte[] dataBlob) throws PCAException, ShortBufferException {
         switch (request.getTpmVersion()) {
             case "1.2":
                 return processV12(request, caPrivKey, caPubKey, ekPub, dataBlob);
@@ -125,13 +131,14 @@ public class PrivacyCA {
         return makeAikCertificate(endorsementKey, "TPM EK Certificate", caPrivKey, caCert, validityDays);
     }
 
-    private static IdentityProofRequest processV20(IdentityRequest request, RSAPublicKey pubEk, byte[] dataBlob) throws PCAException {
+    private static IdentityProofRequest processV20(IdentityRequest request, RSAPublicKey pubEk, byte[] dataBlob) throws PCAException, ShortBufferException {
+        IdentityProofRequest proofReq = new IdentityProofRequest();
         try {
             byte[] key = TpmUtils.createRandomBytes(16);
             byte[] iv = TpmUtils.createRandomBytes(16);
             byte[] encryptedBlob = TpmUtils.concat(iv, TpmUtils.tcgSymEncrypt(dataBlob, key, iv));
             Tpm2Credential credential = Tpm2.makeCredential(pubEk, Tpm2Algorithm.Symmetric.AES, 128, Tpm2Algorithm.Hash.SHA256, key, request.getAikName());
-            IdentityProofRequest proofReq = new IdentityProofRequest();
+            proofReq.setHeader(credential.getHeader());
             proofReq.setCredential(credential.getCredential());
             proofReq.setSecret(credential.getSecret());
             TpmPubKey tpk = new TpmPubKey(Utils.makeRSAPublicKey(request.getAikModulus()), 0x1, 0x4);
@@ -144,10 +151,10 @@ public class PrivacyCA {
             keyParms.setSubParams(null);
             keyParms.setTrouSerSmode(true);
             proofReq.setSymBlob(TpmUtils.concat(TpmUtils.concat(TpmUtils.intToByteArray(encryptedBlob.length), keyParms.toByteArray()), encryptedBlob));
-            return proofReq;
-        } catch (TpmUtils.TpmUnsignedConversionException | InvalidKeySpecException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException | ShortBufferException | IOException ex) {
+        } catch ( IOException | TpmUtils.TpmUnsignedConversionException | InvalidKeySpecException | NoSuchAlgorithmException | BadPaddingException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException ex) {
             throw new PCAException(ex);
-        } 
+        }
+        return proofReq;
     }
 
     private static IdentityProofRequest processV12(IdentityRequest request, RSAPrivateKey caPrivKey, RSAPublicKey caPubKey, RSAPublicKey ekPub, byte[] dataBlob) throws PCAException {
