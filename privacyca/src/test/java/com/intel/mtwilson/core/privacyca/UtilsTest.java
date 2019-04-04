@@ -6,7 +6,6 @@ package com.intel.mtwilson.core.privacyca;
 
 import gov.niarl.his.privacyca.TpmUtils;
 import java.security.NoSuchAlgorithmException;
-import org.hamcrest.core.*;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

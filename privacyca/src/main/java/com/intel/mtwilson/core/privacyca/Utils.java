@@ -42,7 +42,7 @@ class Utils {
             TPM_DIGEST idDigest;
             TPM_PCR_INFO_SHORT pcrInfo;
             } TPM_EK_BLOB_ACTIVATE;
-             */
+            */
             int cbActivation = 2
                     + //TPM_STRUCTURE_TAG tag = TPM_TAG_EK_BLOB
                     2
@@ -83,11 +83,9 @@ class Utils {
             sVal = 0x002b; // TPM_TAG_EK_BLOB_ACTIVATE
             System.arraycopy(TpmUtils.shortToByteArray(sVal), 0, activationBlob, index, 2);
             index = index + 2;
-            //intVal = TpmKeyParams.TPM_ALG_AES; //not TPM_ALG_XOR
             intVal = 0x0000000a; //not TPM_ALG_XOR
             System.arraycopy(TpmUtils.intToByteArray(intVal), 0, activationBlob, index, 4);
             index = index + 4;
-            //sVal = TpmKeyParams.TPM_ES_SYM_CBC_PKCS5PAD; //TPM_ES_NONE
             sVal = 0x0001; //TPM_ES_NONE
             System.arraycopy(TpmUtils.shortToByteArray(sVal), 0, activationBlob, index, 2);
             index = index + 2;
@@ -105,10 +103,6 @@ class Utils {
             byte[] loczero = new byte[1];
             loczero[0] = (byte) 0x01; //TPM_LOC_ZERO
             System.arraycopy(loczero, 0, activationBlob, index, 1);
-            //#5834: Variable 'index' was never read after being assigned.
-            //index = index + 1;
-            // the digest is 0, so no need to copy
-            //index = index + 20;
             return activationBlob;
         } catch (TpmUtils.TpmUnsignedConversionException ex) {
             throw new RuntimeException();

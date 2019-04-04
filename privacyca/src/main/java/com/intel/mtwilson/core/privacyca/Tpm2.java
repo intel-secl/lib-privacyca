@@ -14,7 +14,6 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
-import java.security.Provider;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.interfaces.RSAPublicKey;
@@ -28,17 +27,10 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.ShortBufferException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
-import org.bouncycastle.crypto.DerivationParameters;
-import org.bouncycastle.crypto.digests.SHA1Digest;
-import org.bouncycastle.crypto.digests.SHA256Digest;
-//import org.bouncycastle.crypto.generators.KDFCounterBytesGenerator;
-import org.bouncycastle.crypto.macs.HMac;
-//import org.bouncycastle.crypto.params.KDFCounterParameters;
 
 /**
  *
@@ -107,7 +99,6 @@ public class Tpm2 {
             InvalidAlgorithmParameterException,
             IllegalBlockSizeException,
             BadPaddingException,
-            ShortBufferException,
             IOException {
         if (credential == null || credential.length <= 0) {
             throw new IllegalArgumentException("credential is null or empty");
@@ -139,7 +130,6 @@ public class Tpm2 {
                 byte[] secretData = createRandomBytes(nameAlgDigestLength);
                 seed = secretData;
                 Cipher rsaCipher;
-               // Provider bcProvider = new BouncyCastleProvider();
                 OAEPParameterSpec oaepSpec;
                 switch (nameAlgorithm) {
                     case SHA1:
@@ -210,20 +200,6 @@ public class Tpm2 {
         return new Tpm2Credential(credentialBlob.array(), encryptedSeed.array());
     }
 
-//    private static byte[] concat(byte[] left, byte[] right) {
-//        if(left == null) {
-//            return right;
-//        } if( right == null ) {
-//            return left;
-//        }
-//        int lLength = left.length;
-//        int rLength = right.length;
-//        byte[] out = new byte[lLength + rLength];
-//        System.arraycopy(left, 0, out, 0, lLength);
-//        System.arraycopy(right, 0, out, lLength, rLength);
-//        return out;
-//    }
-    
     private static byte[] kDFa(Tpm2Algorithm.Hash hashAlgorithm, byte[] key, String label, byte[] contextU, byte[] contextV, int sizeInBits) throws NoSuchAlgorithmException, InvalidKeyException {
         String macAlgorithm;
 
@@ -273,28 +249,6 @@ public class Tpm2 {
         }
         return outBuf;
     }
-    
-//    private static byte[] kDFaBC(Tpm2Algorithm.Hash hashAlgorithm, byte[] key, String label, byte[] contextU, byte[] contextV, int sizeInBits) throws NoSuchAlgorithmException, InvalidKeyException {
-//        HMac mac;
-//        switch (hashAlgorithm) {
-//            case SHA1:
-//                mac = new HMac(new SHA1Digest());
-//                break;
-//            case SHA256:
-//                mac = new HMac(new SHA256Digest());
-//                break;
-//            default:
-//                throw new UnsupportedOperationException(hashAlgorithm + " not supported");
-//        }
-//        
-//        KDFCounterBytesGenerator kdf = new KDFCounterBytesGenerator(mac);
-//        byte[] out = new byte[(sizeInBits + 7) / 8];
-//        byte[] context = concat(concat(concat(concat(label.getBytes(), new byte[] { 0x00 }), contextU), contextV), marshalInt32ToByteArray(sizeInBits, ByteOrder.BIG_ENDIAN));
-//        DerivationParameters param = new KDFCounterParameters(key, null, context, 32);
-//        kdf.init(param);
-//        kdf.generateBytes(out, 0, out.length);
-//        return out;
-//    }
 
     private static byte[] marshalInt16ToByteArray(short i, ByteOrder order) {
         return ByteBuffer.allocate(SHORT_BYTES).order(order).putShort(i).array();
