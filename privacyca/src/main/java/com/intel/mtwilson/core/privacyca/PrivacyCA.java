@@ -107,7 +107,7 @@ public class PrivacyCA {
                 new X500Principal(""),
                 aik);
         certBuilder.addExtension(X509Extension.subjectAlternativeName, true, new GeneralNames(new GeneralName(GeneralName.rfc822Name, sanLabel)));
-        X509CertificateHolder holder = certBuilder.build(new JcaContentSignerBuilder("SHA256withRSA").setProvider("BC").build(caPrivKey));
+        X509CertificateHolder holder = certBuilder.build(new JcaContentSignerBuilder("SHA384withRSA").setProvider("BC").build(caPrivKey));
         return new JcaX509CertificateConverter().setProvider("BC").getCertificate(holder);
     }
     
